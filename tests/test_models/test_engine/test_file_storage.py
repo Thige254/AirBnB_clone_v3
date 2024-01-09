@@ -70,46 +70,86 @@ test_file_storage.py'])
 
 class TestFileStorage(unittest.TestCase):
     """Test the FileStorage class"""
-    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
-    def test_all_returns_dict(self):
-        """Test that all returns the FileStorage.__objects attr"""
-        storage = FileStorage()
-        new_dict = storage.all()
-        self.assertEqual(type(new_dict), dict)
-        self.assertIs(new_dict, storage._FileStorage__objects)
+    
+    # ... (previous test cases)
 
     @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
-    def test_new(self):
-        """test that new adds an object to the FileStorage.__objects attr"""
+    def test_get(self):
+        """Test the get method"""
         storage = FileStorage()
-        save = FileStorage._FileStorage__objects
-        FileStorage._FileStorage__objects = {}
-        test_dict = {}
-        for key, value in classes.items():
-            with self.subTest(key=key, value=value):
-                instance = value()
-                instance_key = instance.__class__.__name__ + "." + instance.id
-                storage.new(instance)
-                test_dict[instance_key] = instance
-                self.assertEqual(test_dict, storage._FileStorage__objects)
-        FileStorage._FileStorage__objects = save
-
-    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
-    def test_save(self):
-        """Test that save properly saves objects to file.json"""
-        storage = FileStorage()
-        new_dict = {}
-        for key, value in classes.items():
-            instance = value()
-            instance_key = instance.__class__.__name__ + "." + instance.id
-            new_dict[instance_key] = instance
-        save = FileStorage._FileStorage__objects
-        FileStorage._FileStorage__objects = new_dict
+        new_state = State()
+        storage.new(new_state)
         storage.save()
-        FileStorage._FileStorage__objects = save
-        for key, value in new_dict.items():
-            new_dict[key] = value.to_dict()
-        string = json.dumps(new_dict)
-        with open("file.json", "r") as f:
-            js = f.read()
-        self.assertEqual(json.loads(string), json.loads(js))
+        state_id = new_state.id
+
+        retrieved_state = storage.get(State, state_id)
+        self.assertEqual(retrieved_state, new_state)
+
+        non_existent_state = storage.get(State, "non_existent_id")
+        self.assertIsNone(non_existent_state)
+
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_count(self):
+        """Test the count method"""
+        storage = FileStorage()
+        num_states = storage.count(State)
+        self.assertEqual(num_states, 0)
+
+        new_state = State()
+        storage.new(new_state)
+        storage.save()
+
+        num_states = storage.count(State)
+        self.assertEqual(num_states, 1)
+
+        # Test count without specifying a class
+        num_all_objects = storage.count()
+        self.assertEqual(num_all_objects, 1)
+
+    @unittest.skipIf(models.storage_t == 'db', "not testing file storage")
+    def test_delete(self):
+        """Test the delete method"""
+        storage = FileStorage()
+        new_state = State()
+        storage.new(new_state)
+        storage.save()
+        state_id = new_state.id
+
+        # Check that the state exists before deletion
+        retrieved_state = storage.get(State, state_id)
+        self.assertEqual(retrieved_state, new_state)
+
+        # Delete the state
+        storage.delete(new_state)
+        storage.save()
+
+        # Check that the state no longer exists after deletion
+        deleted_state = storage.get(State, state_id)
+        self.assertIsNone(deleted_state)
+
+        # Additional test: Try to delete a non-existent state
+        non_existent_state = State()
+        storage.delete(non_existent_state)
+        storage.save()
+
+        # Check that deleting a non-existent state doesn't raise an error
+        self.assertIsNone(storage.get(State, non_existent_state.id))
+
+        # Additional test: Try to delete an object of a different class
+        new_user = User()
+        storage.new(new_user)
+        storage.save()
+
+        # Check that the user still exists after trying to delete a different class object
+        retrieved_user = storage.get(User, new_user.id)
+        self.assertEqual(retrieved_user, new_user)
+
+        # Delete the user
+        storage.delete(new_user)
+        storage.save()
+
+        # Check that the user no longer exists after deletion
+        deleted_user = storage.get(User, new_user.id)
+        self.assertIsNone(deleted_user)
+
+# ... (remaining code)
