@@ -1,13 +1,20 @@
-from flask import Flask, Blueprint, request, jsonify
+from flask import Flask, Blueprint, request, jsonify, make_response
 from os import environ
 from models import storage
 from api.v1.views import app_views
-
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 app.register_blueprint(app_views)
+
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handles 404 errors and returns a JSON response."""
+    response = jsonify({"error": "Not found"})
+    response.status_code = 404
+    return response
 
 
 @app.teardown_appcontext
