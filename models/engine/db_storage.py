@@ -14,7 +14,6 @@ from models.user import User
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-
 class DBStorage:
     """Database Storage"""
     __engine = None
@@ -100,3 +99,19 @@ class DBStorage:
             for cls in self.name2class.values():
                 total += self.__session.query(cls).count()
         return total
+
+    def reload(self):
+        """Reloads data from the database."""
+        from models.base_model import Base, BaseModel
+        from models.amenity import Amenity
+        from models.city import City
+        from models.place import Place
+        from models.review import Review
+        from models.state import State
+        from models.user import User
+
+        Base.metadata.create_all(self.__engine)
+        session_factory = sessionmaker(
+            bind=self.__engine, expire_on_commit=False)
+        Session = scoped_session(session_factory)
+        self.__session = Session
