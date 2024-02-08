@@ -2,9 +2,14 @@ from flask import Flask, Blueprint, request, jsonify, make_response
 from os import environ
 from models import storage
 from api.v1.views import app_views
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
+
+# Enable CORS for all origins.using asterisk
+# FOR DEVELOPMENT ONLY...DURING PRODUCTION I WILL NEED TO UPDATE WITH SPECIFI ORIGINS
+cors = CORS(app, origins=["*"])
 
 app.register_blueprint(app_views)
 
